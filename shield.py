@@ -49,6 +49,10 @@ def set_uploaded_image(image_path):
 # Model selection
 model_option = st.selectbox('Select Model', ['Keras Model', 'SVM Model (LBP)'])
 
+# Initialize uploaded_image in session state
+if 'uploaded_image' not in st.session_state:
+    st.session_state.uploaded_image = None
+    
 # Image upload
 uploaded_image = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'])
 
@@ -69,6 +73,8 @@ if os.path.exists(gallery_folder):
                     image_name = gallery_images[index]
                     image_path = os.path.join(gallery_folder, image_name)
                     img = Image.open(image_path)
+                    # Resize image to 1x1 aspect ratio
+                    img = img.resize((100, 100))
                     if cols[j].button(image_name):
                         set_uploaded_image(image_path)
                     cols[j].image(img, caption=image_name, use_column_width=True)
