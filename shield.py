@@ -18,6 +18,7 @@ keras_model = load_model(model_path)
 # Load the SVM model trained on LBP features
 svm_model_lbp = joblib.load("svm_rice_leaf_model_lbp.joblib")
 category_order = ['tungro', 'blast', 'brownspot', 'sheathblight', 'bacterialblight']
+
 # Function for predicting with Keras model
 def predict_with_keras(image_data):
     target_size=(224, 224)
@@ -33,7 +34,6 @@ def predict_with_keras(image_data):
 
 # Function for predicting with SVM model using LBP features
 def predict_with_svmlbp(image_data):
-    
     img_gray = cv2.cvtColor(image_data, cv2.COLOR_RGB2GRAY)
     lbp_features = local_binary_pattern(img_gray, 8, 1, method='uniform')
     hist, _ = np.histogram(lbp_features.ravel(), bins=np.arange(0, 10), range=(0, 9))
@@ -41,7 +41,10 @@ def predict_with_svmlbp(image_data):
     prediction = category_order[prediction_index]
     return prediction
 
-
+# Function to set selected image as uploaded_image
+def set_uploaded_image(image_path):
+    img = Image.open(image_path)
+    st.session_state.uploaded_image = np.array(img)
 
 # Model selection
 model_option = st.selectbox('Select Model', ['Keras Model', 'SVM Model (LBP)'])
@@ -55,29 +58,32 @@ if os.path.exists(gallery_folder):
     gallery_images = os.listdir(gallery_folder)
     if gallery_images:
         st.subheader('Gallery')
-        for image_name in gallery_images:
-            image_path = os.path.join(gallery_folder, image_name)
-            if st.button(image_name):
-                img = Image.open(image_path)
-                st.image(img, caption='Selected Image', use_column_width=True)
-                img_data = np.array(img)
-                if st.button('Predict'):
-                    if model_option == 'Keras Model':
-                        prediction = predict_with_keras(img_data)
-                    elif model_option == 'SVM Model (LBP)':
-                        prediction = predict_with_svmlbp(img_data)
-                    st.write('Prediction:', prediction)
+        num_columns = 5
+        num_images = len(gallery_images)
+        rows = num_images // num_columns + int(num_images % num_columns > 0)
+        for i in range(rows):
+            cols = st.columns(num_columns)
+            for j in range(num_columns):
+                index = i * num_columns + j
+                if index < num_images:
+                    image_name = gallery_images[index]
+                    image_path = os.path.join(gallery_folder, image_name)
+                    img = Image.open(image_path)
+                    if cols[j].button(image_name):
+                        set_uploaded_image(image_path)
+                    cols[j].image(img, caption=image_name, use_column_width=True)
 
 # Prediction
-if uploaded_image is not None:
-    img = Image.open(uploaded_image)
+if uploaded_image is not None or st.session_state.uploaded_image is not None:
+    if uploaded_image:
+        img = Image.open(uploaded_image)
+        st.session_state.uploaded_image = np.array(img)
+    else:
+        img = Image.fromarray(st.session_state.uploaded_image)
     st.image(img, caption='Uploaded Image', use_column_width=True)
-    img_data = np.array(img)
-
     if st.button('Predict'):
         if model_option == 'Keras Model':
-            prediction = predict_with_keras(img_data)
+            prediction = predict_with_keras(st.session_state.uploaded_image)
         elif model_option == 'SVM Model (LBP)':
-            prediction = predict_with_svmlbp(img_data)
-
+            prediction = predict_with_svmlbp(st.session_state.uploaded_image)
         st.write('Prediction:', prediction)
