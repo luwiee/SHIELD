@@ -1,0 +1,7 @@
+streamlit
+keras
+scikit-image
+opencv-python-headless
+joblib
+Pillow
+numpy
