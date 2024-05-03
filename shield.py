@@ -17,7 +17,7 @@ keras_model = load_model(model_path)
 
 # Load the SVM model trained on LBP features
 svm_model_lbp = joblib.load("svm_rice_leaf_model_lbp.joblib")
-
+category_order = ['tungro', 'blast', 'brownspot', 'sheathblight', 'bacterialblight']
 # Function for predicting with Keras model
 def predict_with_keras(image_data):
     target_size=(224, 224)
@@ -27,11 +27,13 @@ def predict_with_keras(image_data):
     img_array = np.expand_dims(img_array, axis=0)
     img_array /= 255.
     predictions = keras_model.predict(img_array)
-    return predictions
+    img_pred_label_index = np.argmax(predictions)
+    predicted_label = category_order[img_pred_label_index]
+    return predicted_label
 
 # Function for predicting with SVM model using LBP features
 def predict_with_svmlbp(image_data):
-    category_order = ['tungro', 'blast', 'brownspot', 'sheathblight', 'bacterialblight']
+    
     img_gray = cv2.cvtColor(image_data, cv2.COLOR_RGB2GRAY)
     lbp_features = local_binary_pattern(img_gray, 8, 1, method='uniform')
     hist, _ = np.histogram(lbp_features.ravel(), bins=np.arange(0, 10), range=(0, 9))
@@ -46,6 +48,25 @@ model_option = st.selectbox('Select Model', ['Keras Model', 'SVM Model (LBP)'])
 
 # Image upload
 uploaded_image = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'])
+
+# Gallery
+gallery_folder = 'validation'  # Folder containing validation images
+if os.path.exists(gallery_folder):
+    gallery_images = os.listdir(gallery_folder)
+    if gallery_images:
+        st.subheader('Gallery')
+        for image_name in gallery_images:
+            image_path = os.path.join(gallery_folder, image_name)
+            if st.button(image_name):
+                img = Image.open(image_path)
+                st.image(img, caption='Selected Image', use_column_width=True)
+                img_data = np.array(img)
+                if st.button('Predict'):
+                    if model_option == 'Keras Model':
+                        prediction = predict_with_keras(img_data)
+                    elif model_option == 'SVM Model (LBP)':
+                        prediction = predict_with_svmlbp(img_data)
+                    st.write('Prediction:', prediction)
 
 # Prediction
 if uploaded_image is not None:
