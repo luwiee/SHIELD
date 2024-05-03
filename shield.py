@@ -20,7 +20,7 @@ svm_model_lbp = joblib.load("svm_rice_leaf_model_lbp.joblib")
 
 # Function for predicting with Keras model
 def predict_with_keras(image_data):
-    target_size=(256, 256)
+    target_size=(224, 224)
     img = image.array_to_img(image_data)
     img = img.resize(target_size)
     img_array = image.img_to_array(img)
