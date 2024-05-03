@@ -6,4 +6,4 @@ opencv-python-headless
 joblib
 Pillow
 numpy
-sklearn
+scikit-learn
