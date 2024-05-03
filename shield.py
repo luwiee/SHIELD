@@ -8,6 +8,9 @@ from keras.models import load_model
 import joblib
 from PIL import Image
 
+# Streamlit UI
+st.title('Rice Leaf Disease Prediction')
+
 # Load the pre-trained Keras model
 model_path = 'rice_leaf_model_scratch.keras'
 keras_model = load_model(model_path)
@@ -36,8 +39,7 @@ def predict_with_svmlbp(image_data):
     prediction = category_order[prediction_index]
     return prediction
 
-# Streamlit UI
-st.title('Rice Leaf Disease Prediction')
+
 
 # Model selection
 model_option = st.selectbox('Select Model', ['Keras Model', 'SVM Model (LBP)'])
