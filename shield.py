@@ -12,7 +12,7 @@ from PIL import Image
 st.title('Rice Leaf Disease Prediction')
 
 # Load the pre-trained Keras model
-model_path = 'rice_leaf_model_scratch.keras'
+model_path = 'rice_leaf_model_pretrained.keras'
 keras_model = load_model(model_path)
 
 # Load the SVM model trained on LBP features
