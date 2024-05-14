@@ -23,7 +23,12 @@ category_order = ['tungro', 'blast', 'brownspot', 'sheathblight', 'bacterialblig
 category_order_cnn = ['brownspot', 'tungro', 'blast', 'bacterialblight', 'sheathblight']
 # Function for predicting with Keras model
 def predict_with_keras(image_data):
-    target_size=(224, 224)
+    target_size = (224, 224)
+    
+    # Ensure image has 3 channels
+    if image_data.shape[2] == 4:
+        image_data = image_data[:, :, :3]
+        
     img = image.array_to_img(image_data)
     img = img.resize(target_size)
     img_array = image.img_to_array(img)
@@ -39,10 +44,9 @@ def predict_with_svmlbp(image_data):
     img_gray = cv2.cvtColor(image_data, cv2.COLOR_RGB2GRAY)
     lbp_features = local_binary_pattern(img_gray, 8, 1, method='uniform')
     hist, _ = np.histogram(lbp_features.ravel(), bins=np.arange(0, 10), range=(0, 9))
-    predictions = svm_model_lbp.predict_proba(hist.reshape(1, -1))[0]  # Get probabilities for each class
-    sorted_indices = np.argsort(predictions)[::-1]  # Sort probabilities in descending order
-    predictions_sorted = [(category_order[i], predictions[i]*100) for i in sorted_indices]  # Convert to category labels and percentages
-    return predictions_sorted
+    prediction_index = svm_model_lbp.predict(hist.reshape(1, -1))[0]
+    prediction = category_order[prediction_index]
+    return prediction
 
 # Function to set selected image as uploaded_image
 def set_uploaded_image(image_path):
@@ -93,7 +97,8 @@ if uploaded_image is not None or st.session_state.uploaded_image is not None:
     if st.button('Predict'):
         if model_option == 'Keras Model Pre-trained':
             predictions = predict_with_keras(st.session_state.uploaded_image)
+            for category, percentage in predictions:
+                st.write(f"The image is {percentage:.2f}% likely to be {category}.")
         elif model_option == 'SVM Model (LBP)':
-            predictions = predict_with_svmlbp(st.session_state.uploaded_image)
-        for category, percentage in predictions:
-            st.write(f"The image is {percentage:.2f}% likely to be {category}.")
+            st.write(f"The image is likely to be {predictions}.")
+        
