@@ -4,21 +4,23 @@ import numpy as np
 import os
 import cv2
 from skimage.feature import local_binary_pattern
-from keras.models import load_model
 import joblib
 from PIL import Image
+
+import tensorflow as tf
 
 # Streamlit UI
 st.title('Rice Leaf Disease Prediction')
 
-# Load the pre-trained Keras model
-model_path = 'rice_leaf_model_pretrained.keras'
-keras_model = load_model(model_path)
-
 # Load the SVM model trained on LBP features
 svm_model_lbp = joblib.load("svm_rice_leaf_model_lbp.joblib")
-category_order = ['tungro', 'blast', 'brownspot', 'sheathblight', 'bacterialblight']
+# Load the pre-trained Keras model
+model_path = 'rice_leaf_model_pretrained.h5'
+keras_model = tf.keras.models.load_model(model_path)
 
+
+category_order = ['tungro', 'blast', 'brownspot', 'sheathblight', 'bacterialblight']
+category_order_cnn = ['brownspot', 'tungro', 'blast', 'bacterialblight', 'sheathblight']
 # Function for predicting with Keras model
 def predict_with_keras(image_data):
     target_size=(224, 224)
@@ -27,19 +29,20 @@ def predict_with_keras(image_data):
     img_array = image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
     img_array /= 255.
-    predictions = keras_model.predict(img_array)
-    img_pred_label_index = np.argmax(predictions)
-    predicted_label = category_order[img_pred_label_index]
-    return predicted_label
+    predictions = keras_model.predict(img_array)[0]  # Get probabilities for each class
+    sorted_indices = np.argsort(predictions)[::-1]  # Sort probabilities in descending order
+    predictions_sorted = [(category_order_cnn[i], predictions[i]*100) for i in sorted_indices]  # Convert to category labels and percentages
+    return predictions_sorted
 
 # Function for predicting with SVM model using LBP features
 def predict_with_svmlbp(image_data):
     img_gray = cv2.cvtColor(image_data, cv2.COLOR_RGB2GRAY)
     lbp_features = local_binary_pattern(img_gray, 8, 1, method='uniform')
     hist, _ = np.histogram(lbp_features.ravel(), bins=np.arange(0, 10), range=(0, 9))
-    prediction_index = svm_model_lbp.predict(hist.reshape(1, -1))[0]
-    prediction = category_order[prediction_index]
-    return prediction
+    predictions = svm_model_lbp.predict_proba(hist.reshape(1, -1))[0]  # Get probabilities for each class
+    sorted_indices = np.argsort(predictions)[::-1]  # Sort probabilities in descending order
+    predictions_sorted = [(category_order[i], predictions[i]*100) for i in sorted_indices]  # Convert to category labels and percentages
+    return predictions_sorted
 
 # Function to set selected image as uploaded_image
 def set_uploaded_image(image_path):
@@ -47,7 +50,7 @@ def set_uploaded_image(image_path):
     st.session_state.uploaded_image = np.array(img)
 
 # Model selection
-model_option = st.selectbox('Select Model', ['Keras Model', 'SVM Model (LBP)'])
+model_option = st.selectbox('Select Model', ['Keras Model Pre-trained', 'SVM Model (LBP)'])
 
 # Initialize uploaded_image in session state
 if 'uploaded_image' not in st.session_state:
@@ -88,8 +91,9 @@ if uploaded_image is not None or st.session_state.uploaded_image is not None:
         img = Image.fromarray(st.session_state.uploaded_image)
     st.image(img, caption='Uploaded Image', use_column_width=True)
     if st.button('Predict'):
-        if model_option == 'Keras Model':
-            prediction = predict_with_keras(st.session_state.uploaded_image)
+        if model_option == 'Keras Model Pre-trained':
+            predictions = predict_with_keras(st.session_state.uploaded_image)
         elif model_option == 'SVM Model (LBP)':
-            prediction = predict_with_svmlbp(st.session_state.uploaded_image)
-        st.write('Prediction:', prediction)
+            predictions = predict_with_svmlbp(st.session_state.uploaded_image)
+        for category, percentage in predictions:
+            st.write(f"The image is {percentage:.2f}% likely to be {category}.")
