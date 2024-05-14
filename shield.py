@@ -100,5 +100,6 @@ if uploaded_image is not None or st.session_state.uploaded_image is not None:
             for category, percentage in predictions:
                 st.write(f"The image is {percentage:.2f}% likely to be {category}.")
         elif model_option == 'SVM Model (LBP)':
+            predictions = predict_with_svmlbp(st.session_state.uploaded_image)
             st.write(f"The image is likely to be {predictions}.")
         
