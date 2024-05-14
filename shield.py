@@ -15,7 +15,7 @@ st.title('Rice Leaf Disease Prediction')
 # Load the SVM model trained on LBP features
 svm_model_lbp = joblib.load("svm_rice_leaf_model_lbp.joblib")
 # Load the pre-trained Keras model
-model_path = 'rice_leaf_model_pretrained.h5'
+model_path = 'rice_leaf_model_pretrained.keras'
 keras_model = tf.keras.models.load_model(model_path)
 
 
